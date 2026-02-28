@@ -245,8 +245,9 @@ func (bm *BridgeManager) Login(username, password string) (*LoginResult, error) 
 		return &LoginResult{Error: "Authentication failed"}, nil
 	}
 
-	// Ambiguous result — return what we got
-	return &LoginResult{Message: "Login submitted, check status for result. Output: " + truncate(combined, 300)}, nil
+	// Ambiguous result — log detail server-side, return generic message
+	log.Printf("[bridge] Ambiguous login result: %s", truncate(combined, 300))
+	return &LoginResult{Message: "Login submitted. Please check status for result."}, nil
 }
 
 // SubmitTwoFactor sends the 2FA code
@@ -281,7 +282,8 @@ func (bm *BridgeManager) SubmitTwoFactor(code string) (*LoginResult, error) {
 		return &LoginResult{Error: "Invalid 2FA code"}, nil
 	}
 
-	return &LoginResult{Message: "2FA submitted, check status. Output: " + truncate(combined, 300)}, nil
+	log.Printf("[bridge] Ambiguous 2FA result: %s", truncate(combined, 300))
+	return &LoginResult{Message: "2FA submitted. Please check status for result."}, nil
 }
 
 // GetAccounts retrieves account info from the bridge CLI
