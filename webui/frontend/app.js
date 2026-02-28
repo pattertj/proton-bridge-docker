@@ -538,6 +538,13 @@ function App() {
         {status && <StatusBadge state={status.bridgeState} />}
       </div>
 
+      {window.location.protocol === 'http:' && view !== 'loading' && (
+        <div className="callout warning" style={{ marginBottom: 16 }}>
+          Warning: This connection is not encrypted (HTTP). Credentials may be visible on your network.
+          Set WEBUI_TLS_CERT and WEBUI_TLS_KEY environment variables to enable HTTPS.
+        </div>
+      )}
+
       {view === 'loading' && (
         <div className="card" style={{ textAlign: 'center', padding: 40 }}>
           <span className="spinner" style={{ width: 24, height: 24 }} />

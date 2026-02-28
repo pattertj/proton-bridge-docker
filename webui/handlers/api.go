@@ -8,19 +8,26 @@ import (
 
 // API holds the HTTP handler dependencies
 type API struct {
-	bridge *BridgeManager
-	state  *AppState
+	bridge     *BridgeManager
+	state      *AppState
+	tlsEnabled bool
 }
 
 func NewAPI(bridge *BridgeManager, state *AppState) *API {
 	return &API{bridge: bridge, state: state}
 }
 
+// SetTLSEnabled records whether the server is using TLS
+func (a *API) SetTLSEnabled(enabled bool) {
+	a.tlsEnabled = enabled
+}
+
 // Health is a simple healthcheck endpoint
 func (a *API) Health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
-		"status":  "ok",
-		"bridge":  isBridgeAlive(),
+		"status": "ok",
+		"bridge": isBridgeAlive(),
+		"tls":    a.tlsEnabled,
 	})
 }
 

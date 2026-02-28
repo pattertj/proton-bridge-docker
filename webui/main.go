@@ -22,6 +22,11 @@ func main() {
 	port := flag.String("port", "3000", "Web UI server port")
 	flag.Parse()
 
+	// TLS configuration from environment
+	tlsCert := os.Getenv("WEBUI_TLS_CERT")
+	tlsKey := os.Getenv("WEBUI_TLS_KEY")
+	useTLS := tlsCert != "" && tlsKey != ""
+
 	// Initialize bridge manager
 	bridge := handlers.NewBridgeManager()
 
@@ -43,6 +48,9 @@ func main() {
 	mux.HandleFunc("POST /api/accounts/{id}/mode", api.ToggleMode)
 	mux.HandleFunc("POST /api/logout/{id}", api.Logout)
 
+	// Expose TLS status via health endpoint
+	api.SetTLSEnabled(useTLS)
+
 	// Serve embedded frontend
 	frontendSub, err := fs.Sub(frontendFS, "frontend")
 	if err != nil {
@@ -62,9 +70,16 @@ func main() {
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
-		log.Printf("Web UI server starting on port %s", *port)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server error: %v", err)
+		if useTLS {
+			log.Printf("Web UI server starting on port %s (HTTPS)", *port)
+			if err := server.ListenAndServeTLS(tlsCert, tlsKey); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Server error: %v", err)
+			}
+		} else {
+			log.Printf("Web UI server starting on port %s (HTTP - credentials sent in cleartext!)", *port)
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Server error: %v", err)
+			}
 		}
 	}()
 

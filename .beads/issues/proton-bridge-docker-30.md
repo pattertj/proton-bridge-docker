@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-HIGH: Web UI served over HTTP (no TLS)"
-status: open
+status: done
 priority: high
 labels: [security]
 created: 2026-02-27
