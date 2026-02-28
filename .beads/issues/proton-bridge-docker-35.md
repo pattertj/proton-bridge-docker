@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-MEDIUM: CDN dependencies lack SRI hashes"
-status: open
+status: done
 priority: high
 labels: [security]
 created: 2026-02-27
