@@ -85,6 +85,7 @@ type loginRequest struct {
 
 // Login initiates the login flow
 func (a *API) Login(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 10*1024) // 10KB max
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -118,6 +119,7 @@ type twoFactorRequest struct {
 
 // LoginTwoFactor submits the 2FA code
 func (a *API) LoginTwoFactor(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, 10*1024) // 10KB max
 	var req twoFactorRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
