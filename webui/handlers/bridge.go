@@ -308,6 +308,11 @@ func (bm *BridgeManager) GetAccounts() ([]Account, error) {
 
 // ToggleMode toggles combined/split address mode for an account
 func (bm *BridgeManager) ToggleMode(accountID string) (string, error) {
+	safeID, err := sanitizeAccountID(accountID)
+	if err != nil {
+		return "", err
+	}
+
 	if err := bm.EnterSetupMode(); err != nil {
 		return "", err
 	}
@@ -320,7 +325,7 @@ func (bm *BridgeManager) ToggleMode(accountID string) (string, error) {
 		return "", fmt.Errorf("CLI not available")
 	}
 
-	output, err := cli.execute("change mode " + accountID)
+	output, err := cli.execute("change mode " + safeID)
 	if err != nil {
 		return "", err
 	}
@@ -329,6 +334,11 @@ func (bm *BridgeManager) ToggleMode(accountID string) (string, error) {
 
 // LogoutAccount removes an account
 func (bm *BridgeManager) LogoutAccount(accountID string) (string, error) {
+	safeID, err := sanitizeAccountID(accountID)
+	if err != nil {
+		return "", err
+	}
+
 	if err := bm.EnterSetupMode(); err != nil {
 		return "", err
 	}
@@ -341,7 +351,7 @@ func (bm *BridgeManager) LogoutAccount(accountID string) (string, error) {
 		return "", fmt.Errorf("CLI not available")
 	}
 
-	output, err := cli.execute("logout " + accountID)
+	output, err := cli.execute("logout " + safeID)
 	if err != nil {
 		return "", err
 	}
@@ -519,6 +529,16 @@ func startBridgeNonInteractive() error {
 	cmd.Stdout = nil
 	cmd.Stderr = nil
 	return cmd.Start()
+}
+
+var accountIDRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)
+
+// sanitizeAccountID validates that an account ID contains only safe characters.
+func sanitizeAccountID(id string) (string, error) {
+	if !accountIDRegex.MatchString(id) {
+		return "", fmt.Errorf("invalid account ID: contains disallowed characters")
+	}
+	return id, nil
 }
 
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
