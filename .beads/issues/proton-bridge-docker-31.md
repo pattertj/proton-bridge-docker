@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-MEDIUM: GPG key has no passphrase"
-status: open
+status: done
 priority: medium
 labels: [security]
 created: 2026-02-27
