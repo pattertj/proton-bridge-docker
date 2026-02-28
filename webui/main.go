@@ -46,6 +46,7 @@ func main() {
 	mux.HandleFunc("GET /api/health", api.Health)
 	mux.HandleFunc("GET /api/status", api.Status)
 	mux.HandleFunc("GET /api/accounts", api.GetAccounts)
+	mux.HandleFunc("POST /api/accounts/refresh", api.RefreshAccounts)
 	mux.HandleFunc("POST /api/login", handlers.RateLimitMiddleware(loginLimiter, api.Login))
 	mux.HandleFunc("POST /api/login/2fa", handlers.RateLimitMiddleware(loginLimiter, api.LoginTwoFactor))
 	mux.HandleFunc("POST /api/accounts/{id}/mode", api.ToggleMode)

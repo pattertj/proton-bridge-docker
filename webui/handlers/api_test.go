@@ -38,6 +38,27 @@ func TestHealthEndpointTLSField(t *testing.T) {
 	}
 }
 
+func TestGetAccountsDoesNotRestartBridge(t *testing.T) {
+	bm := NewBridgeManager()
+	state := &AppState{}
+	api := NewAPI(bm, state)
+
+	// GET /api/accounts should return cached data without changing bridge state
+	stateBefore := bm.GetState()
+	req := httptest.NewRequest("GET", "/api/accounts", nil)
+	w := httptest.NewRecorder()
+	api.GetAccounts(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	stateAfter := bm.GetState()
+	if stateBefore != stateAfter {
+		t.Errorf("bridge state changed from %v to %v during GET /api/accounts", stateBefore, stateAfter)
+	}
+}
+
 func TestLoginRejectsOversizedBody(t *testing.T) {
 	bm := NewBridgeManager()
 	state := &AppState{}

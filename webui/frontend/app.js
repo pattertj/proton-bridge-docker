@@ -384,6 +384,19 @@ function App() {
     }
   }, [handleAuthError]);
 
+  // Refresh accounts with live credentials (causes brief bridge restart)
+  const refreshAccounts = useCallback(async () => {
+    try {
+      const data = await api('/accounts/refresh', { method: 'POST' });
+      setAccounts(data.accounts || []);
+      return data.accounts || [];
+    } catch (e) {
+      if (e instanceof AuthError) { handleAuthError(); return []; }
+      console.error('Refresh failed:', e);
+      return [];
+    }
+  }, [handleAuthError]);
+
   // Initial load
   useEffect(() => {
     (async () => {
@@ -574,7 +587,7 @@ function App() {
         <Dashboard
           accounts={accounts}
           status={status}
-          onRefresh={fetchAccounts}
+          onRefresh={refreshAccounts}
           onAddAccount={() => { setError(null); setView('login'); }}
           onToggleMode={handleToggleMode}
           onLogout={handleLogout}

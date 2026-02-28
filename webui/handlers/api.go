@@ -37,29 +37,34 @@ func (a *API) Status(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, info)
 }
 
-// GetAccounts returns configured accounts with credentials
+// GetAccounts returns cached account info from state (no bridge restart).
 func (a *API) GetAccounts(w http.ResponseWriter, r *http.Request) {
+	stateAccounts := a.state.GetAccounts()
+	accounts := make([]Account, len(stateAccounts))
+	for i, email := range stateAccounts {
+		accounts[i] = Account{
+			ID:       string(rune('0' + i)),
+			Email:    email,
+			IMAPPort: 1143,
+			SMTPPort: 1025,
+			Security: "STARTTLS",
+			Status:   "cached",
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"accounts": accounts,
+		"note":     "Use POST /api/accounts/refresh to get live credentials (causes brief bridge restart).",
+	})
+}
+
+// RefreshAccounts enters setup mode to get live account credentials.
+func (a *API) RefreshAccounts(w http.ResponseWriter, r *http.Request) {
 	accounts, err := a.bridge.GetAccounts()
 	if err != nil {
-		// If we can't enter CLI mode, return what we know from state
-		log.Printf("[api] GetAccounts error: %v, returning state-based response", err)
-		stateAccounts := a.state.GetAccounts()
-		fallback := make([]Account, len(stateAccounts))
-		for i, email := range stateAccounts {
-			fallback[i] = Account{
-				ID:       string(rune('0' + i)),
-				Email:    email,
-				IMAPPort: 1143,
-				SMTPPort: 1025,
-				Security: "STARTTLS",
-				Status:   "unknown (bridge in non-interactive mode)",
-			}
-		}
-		writeJSON(w, http.StatusOK, map[string]any{
-			"accounts": fallback,
-			"note":     "Credentials only available during setup mode. Click 'Refresh Credentials' to enter setup mode.",
+		log.Printf("[api] RefreshAccounts error: %v", err)
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "Could not enter setup mode to refresh credentials",
 		})
-		// Re-exit setup mode if we entered it
 		go a.bridge.ExitSetupMode()
 		return
 	}
