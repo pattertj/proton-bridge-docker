@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -85,6 +86,34 @@ func TestGetAccountsReturnsCopy(t *testing.T) {
 	// Original should be unchanged
 	if s.GetAccounts()[0] != "user@proton.me" {
 		t.Error("GetAccounts should return a copy, not a reference")
+	}
+}
+
+func TestStateMarshalRoundtrip(t *testing.T) {
+	s := &AppState{
+		SetupComplete:     true,
+		LastBridgeVersion: "v3.22.0",
+		Accounts:          []string{"a@pm.me", "b@pm.me"},
+	}
+
+	data, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var loaded AppState
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if !loaded.SetupComplete {
+		t.Error("SetupComplete should be true")
+	}
+	if loaded.LastBridgeVersion != "v3.22.0" {
+		t.Errorf("version = %q", loaded.LastBridgeVersion)
+	}
+	if len(loaded.Accounts) != 2 {
+		t.Errorf("accounts len = %d", len(loaded.Accounts))
 	}
 }
 

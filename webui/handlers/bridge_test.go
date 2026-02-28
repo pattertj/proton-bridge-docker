@@ -156,6 +156,63 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
+func TestNewBridgeManagerDefaults(t *testing.T) {
+	bm := NewBridgeManager()
+	if bm.GetState() != StateRunning {
+		t.Errorf("initial state = %v, want StateRunning", bm.GetState())
+	}
+	prog := bm.GetSyncProgress()
+	if len(prog) != 0 {
+		t.Errorf("initial sync progress should be empty, got %d", len(prog))
+	}
+}
+
+func TestBridgeManagerClose(t *testing.T) {
+	bm := NewBridgeManager()
+	// Close should not panic even with no CLI
+	bm.Close()
+	// Should be safe to call twice
+	bm.Close()
+}
+
+func TestSplitAccountBlocks_NoAccounts(t *testing.T) {
+	blocks := splitAccountBlocks("some random output\nno accounts here\n>>> ")
+	if len(blocks) != 0 {
+		t.Errorf("expected 0 blocks from output with no @, got %d", len(blocks))
+	}
+}
+
+func TestSplitAccountBlocks_SingleBlock(t *testing.T) {
+	output := `Account: single@test.com
+Username: single@test.com
+Password: p1
+`
+	blocks := splitAccountBlocks(output)
+	if len(blocks) != 1 {
+		t.Errorf("expected 1 block, got %d", len(blocks))
+	}
+}
+
+func TestParseAccounts_PartialData(t *testing.T) {
+	// Account line but missing other fields
+	output := `Account: partial@proton.me
+>>> `
+	accounts := parseAccounts(output)
+	if len(accounts) != 1 {
+		t.Fatalf("expected 1 account, got %d", len(accounts))
+	}
+	if accounts[0].Email != "partial@proton.me" {
+		t.Errorf("email = %q", accounts[0].Email)
+	}
+	// Defaults should apply
+	if accounts[0].Security != "STARTTLS" {
+		t.Errorf("security default = %q", accounts[0].Security)
+	}
+	if accounts[0].IMAPPort != 1143 {
+		t.Errorf("imapPort default = %d", accounts[0].IMAPPort)
+	}
+}
+
 func TestBridgeStateString(t *testing.T) {
 	tests := []struct {
 		state BridgeState
