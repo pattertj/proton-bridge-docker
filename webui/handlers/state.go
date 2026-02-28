@@ -47,7 +47,7 @@ func (s *AppState) Save() {
 		return
 	}
 
-	if err := os.WriteFile(stateFilePath, data, 0644); err != nil {
+	if err := os.WriteFile(stateFilePath, data, 0600); err != nil {
 		log.Printf("[state] Failed to write state file: %v", err)
 	}
 }
