@@ -200,7 +200,7 @@ func (bm *BridgeManager) Login(username, password string) (*LoginResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("username entry failed: %w", err)
 	}
-	log.Printf("[bridge] Username response: %s", truncate(output, 200))
+	log.Println("[bridge] Username submitted, awaiting password prompt...")
 
 	// Send password, wait for result (2FA prompt, success, or >>> prompt)
 	cli.sendRaw(password)
@@ -213,7 +213,7 @@ func (bm *BridgeManager) Login(username, password string) (*LoginResult, error) 
 	if err != nil {
 		return nil, fmt.Errorf("password entry failed: %w", err)
 	}
-	log.Printf("[bridge] Password response: %s", truncate(output, 200))
+	log.Println("[bridge] Password submitted, awaiting response...")
 
 	// Check for 2FA prompt
 	if strings.Contains(output, "Two factor code:") || strings.Contains(output, "two factor") || strings.Contains(output, "2FA") {

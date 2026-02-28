@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-HIGH: Remove credential-adjacent logging"
-status: open
+status: done
 priority: critical
 labels: [security]
 created: 2026-02-27
