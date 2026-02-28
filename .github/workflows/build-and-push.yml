@@ -12,7 +12,29 @@ env:
   GHCR_REPO: ghcr.io/pattertj/protonmail-bridge
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache-dependency-path: webui/go.mod
+
+      - name: Run Go tests
+        working-directory: webui
+        run: go test ./handlers/ -v -cover
+
+      - name: Run shell tests
+        run: |
+          bash tests/test_entrypoint.sh
+          bash tests/test_no_cdn.sh
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
