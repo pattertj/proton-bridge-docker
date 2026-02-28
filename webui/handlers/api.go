@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -39,11 +40,32 @@ func (a *API) Status(w http.ResponseWriter, r *http.Request) {
 
 // GetAccounts returns cached account info from state (no bridge restart).
 func (a *API) GetAccounts(w http.ResponseWriter, r *http.Request) {
+	details := a.state.GetAccountDetails()
+	if len(details) > 0 {
+		accounts := make([]Account, len(details))
+		for i, d := range details {
+			accounts[i] = Account{
+				ID:       fmt.Sprintf("%d", i),
+				Email:    d.Email,
+				Username: d.Username,
+				Password: d.Password,
+				IMAPPort: d.IMAPPort,
+				SMTPPort: d.SMTPPort,
+				Security: d.Security,
+				Mode:     d.Mode,
+				Status:   d.Status,
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"accounts": accounts})
+		return
+	}
+
+	// Fallback: only email strings available (pre-refresh state)
 	stateAccounts := a.state.GetAccounts()
 	accounts := make([]Account, len(stateAccounts))
 	for i, email := range stateAccounts {
 		accounts[i] = Account{
-			ID:       string(rune('0' + i)),
+			ID:       fmt.Sprintf("%d", i),
 			Email:    email,
 			IMAPPort: 1143,
 			SMTPPort: 1025,
@@ -52,8 +74,8 @@ func (a *API) GetAccounts(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"accounts": accounts,
-		"note":     "Use POST /api/accounts/refresh to get live credentials (causes brief bridge restart).",
+		"accounts":     accounts,
+		"needsRefresh": true,
 	})
 }
 
@@ -69,12 +91,24 @@ func (a *API) RefreshAccounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update state with discovered accounts
+	// Update state with discovered accounts and full details
+	details := make([]AccountInfo, 0, len(accounts))
 	for _, acc := range accounts {
 		if acc.Email != "" {
 			a.state.AddAccount(acc.Email)
+			details = append(details, AccountInfo{
+				Email:    acc.Email,
+				Username: acc.Username,
+				Password: acc.Password,
+				IMAPPort: acc.IMAPPort,
+				SMTPPort: acc.SMTPPort,
+				Security: acc.Security,
+				Mode:     acc.Mode,
+				Status:   acc.Status,
+			})
 		}
 	}
+	a.state.SetAccountDetails(details)
 	a.state.Save()
 
 	// Exit setup mode after getting info

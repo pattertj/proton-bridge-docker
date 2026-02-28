@@ -164,22 +164,6 @@ jobs:
         run: |
           docker buildx imagetools inspect ${{ env.DOCKER_HUB_REPO }}:${{ steps.meta.outputs.version }}
 
-  update-readme:
-    needs: merge
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ env.DOCKER_HUB_REPO }}
-          readme-filepath: ./README.md
-
   build-pr:
     needs: test
     runs-on: ubuntu-latest

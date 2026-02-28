@@ -58,6 +58,71 @@ func TestStatusEndpoint(t *testing.T) {
 	}
 }
 
+func TestGetAccountsWithDetails(t *testing.T) {
+	bm := NewBridgeManager()
+	state := &AppState{}
+	state.AddAccount("user@proton.me")
+	state.SetAccountDetails([]AccountInfo{
+		{Email: "user@proton.me", Username: "user@proton.me", Password: "bridge-pass", IMAPPort: 1143, SMTPPort: 1025, Security: "STARTTLS", Mode: "combined"},
+	})
+	a := NewAPI(bm, state)
+
+	req := httptest.NewRequest("GET", "/api/accounts", nil)
+	w := httptest.NewRecorder()
+	a.GetAccounts(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+
+	accounts := resp["accounts"].([]any)
+	if len(accounts) != 1 {
+		t.Fatalf("expected 1 account, got %d", len(accounts))
+	}
+
+	acc := accounts[0].(map[string]any)
+	if acc["username"] != "user@proton.me" {
+		t.Errorf("username = %v", acc["username"])
+	}
+	if acc["password"] != "bridge-pass" {
+		t.Errorf("password = %v", acc["password"])
+	}
+	if acc["mode"] != "combined" {
+		t.Errorf("mode = %v", acc["mode"])
+	}
+	// Should NOT have needsRefresh when details are present
+	if _, ok := resp["needsRefresh"]; ok {
+		t.Error("should not have needsRefresh when details exist")
+	}
+}
+
+func TestGetAccountsFallbackWithoutDetails(t *testing.T) {
+	bm := NewBridgeManager()
+	state := &AppState{}
+	state.AddAccount("user@proton.me")
+	// No SetAccountDetails — simulates pre-refresh state
+	a := NewAPI(bm, state)
+
+	req := httptest.NewRequest("GET", "/api/accounts", nil)
+	w := httptest.NewRecorder()
+	a.GetAccounts(w, req)
+
+	var resp map[string]any
+	json.NewDecoder(w.Body).Decode(&resp)
+
+	accounts := resp["accounts"].([]any)
+	acc := accounts[0].(map[string]any)
+	if acc["username"] != "" {
+		t.Errorf("username should be empty without details, got %v", acc["username"])
+	}
+	if resp["needsRefresh"] != true {
+		t.Error("should have needsRefresh=true without details")
+	}
+}
+
 func TestLoginValidation(t *testing.T) {
 	bm := NewBridgeManager()
 	state := &AppState{}

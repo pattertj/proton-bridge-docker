@@ -371,12 +371,20 @@ function App() {
     }
   }, [handleAuthError]);
 
-  // Fetch accounts
+  // Fetch accounts (auto-refreshes if credentials missing)
   const fetchAccounts = useCallback(async () => {
     try {
       const data = await api('/accounts');
-      setAccounts(data.accounts || []);
-      return data.accounts || [];
+      const accs = data.accounts || [];
+      if (data.needsRefresh && accs.length > 0) {
+        // No stored credentials yet — fetch live from bridge
+        const refreshed = await api('/accounts/refresh', { method: 'POST' });
+        const refreshedAccs = refreshed.accounts || [];
+        setAccounts(refreshedAccs);
+        return refreshedAccs;
+      }
+      setAccounts(accs);
+      return accs;
     } catch (e) {
       if (e instanceof AuthError) { handleAuthError(); return []; }
       console.error('Accounts fetch failed:', e);
@@ -409,14 +417,7 @@ function App() {
       }
 
       if (s.setupComplete && s.accounts?.length > 0) {
-        const stateAccounts = s.accounts.map((email, i) => ({
-          id: String(i),
-          email,
-          imapPort: 1143,
-          smtpPort: 1025,
-          security: 'STARTTLS',
-        }));
-        setAccounts(stateAccounts);
+        await fetchAccounts();
         setView('dashboard');
       } else {
         setView('login');
@@ -505,10 +506,7 @@ function App() {
       const s = await api('/status');
       setStatus(s);
       if (s.setupComplete && s.accounts?.length > 0) {
-        const stateAccounts = s.accounts.map((email, i) => ({
-          id: String(i), email, imapPort: 1143, smtpPort: 1025, security: 'STARTTLS',
-        }));
-        setAccounts(stateAccounts);
+        await fetchAccounts();
         setView('dashboard');
       } else {
         setView('login');

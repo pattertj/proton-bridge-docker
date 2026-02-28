@@ -9,12 +9,25 @@ import (
 
 const stateFilePath = "/root/.webui-state.json"
 
+// AccountInfo stores persisted account credentials
+type AccountInfo struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	IMAPPort int    `json:"imap_port"`
+	SMTPPort int    `json:"smtp_port"`
+	Security string `json:"security"`
+	Mode     string `json:"mode,omitempty"`
+	Status   string `json:"status,omitempty"`
+}
+
 // AppState tracks persistent state across container restarts
 type AppState struct {
 	mu                sync.RWMutex
-	SetupComplete     bool     `json:"setup_complete"`
-	LastBridgeVersion string   `json:"last_bridge_version"`
-	Accounts          []string `json:"accounts"`
+	SetupComplete     bool          `json:"setup_complete"`
+	LastBridgeVersion string        `json:"last_bridge_version"`
+	Accounts          []string      `json:"accounts"`
+	AccountDetails    []AccountInfo `json:"account_details,omitempty"`
 }
 
 // LoadState reads state from disk or returns defaults
@@ -94,5 +107,22 @@ func (s *AppState) GetAccounts() []string {
 	defer s.mu.RUnlock()
 	result := make([]string, len(s.Accounts))
 	copy(result, s.Accounts)
+	return result
+}
+
+// SetAccountDetails replaces all stored account details
+func (s *AppState) SetAccountDetails(details []AccountInfo) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.AccountDetails = make([]AccountInfo, len(details))
+	copy(s.AccountDetails, details)
+}
+
+// GetAccountDetails returns a copy of stored account details
+func (s *AppState) GetAccountDetails() []AccountInfo {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	result := make([]AccountInfo, len(s.AccountDetails))
+	copy(result, s.AccountDetails)
 	return result
 }

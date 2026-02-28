@@ -123,3 +123,70 @@ func TestIsSetupComplete_Empty(t *testing.T) {
 		t.Error("empty state should not be setup complete")
 	}
 }
+
+func TestAccountDetails(t *testing.T) {
+	s := &AppState{}
+
+	// Initially empty
+	if len(s.GetAccountDetails()) != 0 {
+		t.Error("should start with no account details")
+	}
+
+	// Set details
+	details := []AccountInfo{
+		{Email: "alice@proton.me", Username: "alice@proton.me", Password: "bridge-pass-1", IMAPPort: 1143, SMTPPort: 1025, Security: "STARTTLS"},
+		{Email: "bob@proton.me", Username: "bob@proton.me", Password: "bridge-pass-2", IMAPPort: 1143, SMTPPort: 1025, Security: "STARTTLS"},
+	}
+	s.SetAccountDetails(details)
+
+	got := s.GetAccountDetails()
+	if len(got) != 2 {
+		t.Fatalf("expected 2 details, got %d", len(got))
+	}
+	if got[0].Email != "alice@proton.me" || got[0].Password != "bridge-pass-1" {
+		t.Errorf("first detail = %+v", got[0])
+	}
+	if got[1].Username != "bob@proton.me" {
+		t.Errorf("second detail username = %q", got[1].Username)
+	}
+}
+
+func TestAccountDetailsReturnsCopy(t *testing.T) {
+	s := &AppState{}
+	s.SetAccountDetails([]AccountInfo{{Email: "user@proton.me", Password: "secret"}})
+
+	got := s.GetAccountDetails()
+	got[0].Password = "modified"
+
+	if s.GetAccountDetails()[0].Password != "secret" {
+		t.Error("GetAccountDetails should return a copy")
+	}
+}
+
+func TestAccountDetailsMarshalRoundtrip(t *testing.T) {
+	s := &AppState{
+		SetupComplete: true,
+		Accounts:      []string{"user@pm.me"},
+		AccountDetails: []AccountInfo{
+			{Email: "user@pm.me", Username: "user@pm.me", Password: "bp123", IMAPPort: 1143, SMTPPort: 1025, Security: "STARTTLS", Mode: "combined"},
+		},
+	}
+
+	data, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+
+	var loaded AppState
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if len(loaded.AccountDetails) != 1 {
+		t.Fatalf("expected 1 account detail, got %d", len(loaded.AccountDetails))
+	}
+	d := loaded.AccountDetails[0]
+	if d.Email != "user@pm.me" || d.Password != "bp123" || d.Mode != "combined" {
+		t.Errorf("roundtrip detail = %+v", d)
+	}
+}
