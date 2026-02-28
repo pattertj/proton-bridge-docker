@@ -28,10 +28,19 @@ if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
     export DBUS_SESSION_BUS_ADDRESS
 fi
 
-# --- 4. Environment Variables ---
+# --- 4. Environment Variables (validated) ---
 SMTP_PORT="${CONTAINER_SMTP_PORT:-25}"
 IMAP_PORT="${CONTAINER_IMAP_PORT:-143}"
 WEBUI_PORT="${WEBUI_PORT:-3000}"
+
+# Validate ports are numeric to prevent injection
+for portvar in SMTP_PORT IMAP_PORT WEBUI_PORT; do
+    val="${!portvar}"
+    if ! [[ "$val" =~ ^[0-9]+$ ]]; then
+        echo "[entrypoint] ERROR: Invalid $portvar: $val (must be numeric)"
+        exit 1
+    fi
+done
 
 # --- 5. Start socat proxies ---
 # Bridge binds to 127.0.0.1 only. socat forwards from 0.0.0.0 (container interface)
