@@ -5,7 +5,7 @@ echo "After setup, the container will need to be restarted."
 echo ""
 
 # Kill running bridge to free the lock
-pkill -f "bridge" || true
+pkill -f "bridge --noninteractive" || true
 sleep 2
 
 # Launch interactive CLI
