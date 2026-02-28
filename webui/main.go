@@ -39,12 +39,15 @@ func main() {
 	// Setup routes
 	mux := http.NewServeMux()
 
+	// Rate limiter: 5 login attempts per minute
+	loginLimiter := handlers.NewRateLimiter(5, 12*time.Second)
+
 	// API routes
 	mux.HandleFunc("GET /api/health", api.Health)
 	mux.HandleFunc("GET /api/status", api.Status)
 	mux.HandleFunc("GET /api/accounts", api.GetAccounts)
-	mux.HandleFunc("POST /api/login", api.Login)
-	mux.HandleFunc("POST /api/login/2fa", api.LoginTwoFactor)
+	mux.HandleFunc("POST /api/login", handlers.RateLimitMiddleware(loginLimiter, api.Login))
+	mux.HandleFunc("POST /api/login/2fa", handlers.RateLimitMiddleware(loginLimiter, api.LoginTwoFactor))
 	mux.HandleFunc("POST /api/accounts/{id}/mode", api.ToggleMode)
 	mux.HandleFunc("POST /api/logout/{id}", api.Logout)
 

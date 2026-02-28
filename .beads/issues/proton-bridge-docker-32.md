@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-MEDIUM: No rate limiting on login endpoint"
-status: open
+status: done
 priority: high
 labels: [security]
 created: 2026-02-27
