@@ -1,0 +1,36 @@
+name: Create Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get Bridge version from Dockerfile
+        id: bridge_version
+        run: |
+          VERSION=$(grep 'ARG BRIDGE_VERSION=' docker/Dockerfile | sed 's/.*=v//')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.bridge_version.outputs.version }}"
+          body: |
+            ## Proton Mail Bridge v${{ steps.bridge_version.outputs.version }}
+
+            Docker images:
+            - `docker pull pattertj/protonmail-bridge:${{ github.ref_name }}`
+            - `docker pull pattertj/protonmail-bridge:latest`
+            - `docker pull ghcr.io/pattertj/protonmail-bridge:${{ github.ref_name }}`
+
+            [Upstream release notes](https://github.com/ProtonMail/proton-bridge/releases/tag/v${{ steps.bridge_version.outputs.version }})
+          generate_release_notes: true

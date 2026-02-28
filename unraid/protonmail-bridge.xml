@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>ProtonMailBridge</Name>
+  <Repository>pattertj/protonmail-bridge:latest</Repository>
+  <Registry>https://hub.docker.com/r/pattertj/protonmail-bridge</Registry>
+  <Branch>
+    <Tag>latest</Tag>
+    <TagDescription>Latest stable release (Debian-based)</TagDescription>
+  </Branch>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/pattertj/proton-bridge-docker/issues</Support>
+  <Project>https://github.com/pattertj/proton-bridge-docker</Project>
+  <Overview>
+Proton Mail Bridge creates a local IMAP/SMTP server that decrypts your Proton Mail, allowing other containers and email clients on your network to send and receive email through your Proton account.
+
+Includes a web-based setup UI — no command line required. After installing, open the WebUI to log in with your Proton credentials and view your IMAP/SMTP connection details.
+
+IMPORTANT: Requires a paid Proton plan (Mail Plus, Proton Unlimited, or Proton for Business). Free accounts cannot use Bridge.
+
+Use cases: Send notifications from apps like Nextcloud, Gitea, Home Assistant, Uptime Kuma, Paperless-ngx, or any service that supports SMTP. Receive mail via IMAP in self-hosted mail clients.
+  </Overview>
+  <Category>Network:Other Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:3000]</WebUI>
+  <Icon>https://raw.githubusercontent.com/pattertj/proton-bridge-docker/main/unraid/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <DonateText>Buy me a coffee</DonateText>
+  <DonateLink>https://buymeacoffee.com/pattertj</DonateLink>
+  <DonateImg/>
+  <Requires/>
+  <Config
+    Name="Config Storage"
+    Target="/root"
+    Default="/mnt/user/appdata/protonmail-bridge"
+    Mode="rw"
+    Description="Persistent storage for Bridge configuration, credentials, and mail cache. Must survive container recreates."
+    Type="Path"
+    Display="always"
+    Required="true"
+    Mask="false">/mnt/user/appdata/protonmail-bridge</Config>
+  <Config
+    Name="SMTP Port"
+    Target="25"
+    Default="1025"
+    Mode="tcp"
+    Description="SMTP port for sending email. Point your apps here. Default: 1025"
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">1025</Config>
+  <Config
+    Name="IMAP Port"
+    Target="143"
+    Default="1143"
+    Mode="tcp"
+    Description="IMAP port for receiving email. Default: 1143"
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">1143</Config>
+  <Config
+    Name="WebUI Port"
+    Target="3000"
+    Default="3080"
+    Mode="tcp"
+    Description="Web interface for setup and monitoring. Default: 3080"
+    Type="Port"
+    Display="always"
+    Required="true"
+    Mask="false">3080</Config>
+  <Config
+    Name="WEBUI_PORT"
+    Target="WEBUI_PORT"
+    Default="3000"
+    Description="Internal web UI port (do not change unless you have a conflict)"
+    Type="Variable"
+    Display="advanced"
+    Required="false"
+    Mask="false">3000</Config>
+  <Config
+    Name="WEBUI_AUTH_TOKEN"
+    Target="WEBUI_AUTH_TOKEN"
+    Default=""
+    Description="Access token for the Web UI. Set this to require authentication when accessing the management interface. Leave empty to disable auth (not recommended)."
+    Type="Variable"
+    Display="always"
+    Required="false"
+    Mask="true"></Config>
+</Container>

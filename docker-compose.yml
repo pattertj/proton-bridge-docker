@@ -1,0 +1,17 @@
+services:
+  protonmail-bridge:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: pattertj/protonmail-bridge:latest
+    container_name: protonmail-bridge
+    restart: unless-stopped
+    volumes:
+      - ./data:/root
+    ports:
+      - "1025:25"     # SMTP
+      - "1143:143"    # IMAP
+      - "3080:3000"   # Web UI
+    environment:
+      - WEBUI_PORT=3000
+      - WEBUI_AUTH_TOKEN=changeme

@@ -1,0 +1,72 @@
+name: Check Upstream Bridge Version
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get current version
+        id: current
+        run: |
+          CURRENT=$(grep 'ARG BRIDGE_VERSION=' docker/Dockerfile | sed 's/.*=v//')
+          echo "version=${CURRENT}" >> $GITHUB_OUTPUT
+
+      - name: Get latest upstream version
+        id: upstream
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/ProtonMail/proton-bridge/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Compare versions
+        id: compare
+        run: |
+          if [ "${{ steps.current.outputs.version }}" != "${{ steps.upstream.outputs.version }}" ]; then
+            echo "update_available=true" >> $GITHUB_OUTPUT
+            echo "New version available: ${{ steps.upstream.outputs.version }} (current: ${{ steps.current.outputs.version }})"
+          else
+            echo "update_available=false" >> $GITHUB_OUTPUT
+            echo "Already on latest: ${{ steps.current.outputs.version }}"
+          fi
+
+      - name: Update Dockerfile
+        if: steps.compare.outputs.update_available == 'true'
+        run: |
+          NEW_VERSION="${{ steps.upstream.outputs.version }}"
+          sed -i "s/ARG BRIDGE_VERSION=v.*/ARG BRIDGE_VERSION=v${NEW_VERSION}/" docker/Dockerfile
+          echo "${NEW_VERSION}" > VERSION
+
+      - name: Create Pull Request
+        if: steps.compare.outputs.update_available == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: bump Proton Bridge to v${{ steps.upstream.outputs.version }}"
+          title: "Bump Proton Bridge to v${{ steps.upstream.outputs.version }}"
+          body: |
+            Automated version bump detected a new Proton Mail Bridge release.
+
+            **Current:** v${{ steps.current.outputs.version }}
+            **New:** v${{ steps.upstream.outputs.version }}
+
+            [Release notes](https://github.com/ProtonMail/proton-bridge/releases/tag/v${{ steps.upstream.outputs.version }})
+
+            After merging, tag the commit to trigger a release build:
+            ```
+            git tag v${{ steps.upstream.outputs.version }}
+            git push origin v${{ steps.upstream.outputs.version }}
+            ```
+          branch: "auto/bridge-v${{ steps.upstream.outputs.version }}"
+          labels: |
+            automated
+            dependency-update

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Maintainer>
+  <Icon>https://raw.githubusercontent.com/pattertj/proton-bridge-docker/main/unraid/profile.png</Icon>
+  <Name>Tyler Patterson</Name>
+  <Overview>Self-hosted privacy tools for Unraid.</Overview>
+  <GitHub>https://github.com/pattertj</GitHub>
+</Maintainer>

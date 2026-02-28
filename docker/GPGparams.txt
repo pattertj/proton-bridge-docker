@@ -1,0 +1,9 @@
+%no-protection
+Key-Type: RSA
+Key-Length: 2048
+Subkey-Type: RSA
+Subkey-Length: 2048
+Name-Real: Proton Mail Bridge Docker
+Name-Email: bridge@protonmail.docker
+Expire-Date: 0
+%commit
