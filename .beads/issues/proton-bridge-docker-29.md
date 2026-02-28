@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-HIGH: Container runs as root"
-status: open
+status: done
 priority: high
 labels: [security]
 created: 2026-02-27

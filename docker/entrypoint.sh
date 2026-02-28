@@ -17,29 +17,34 @@ if [ ! -d /root/.password-store ]; then
     pass init "$GPG_KEY_ID"
 fi
 
-# --- 2. D-Bus session bus (required by bridge keychain) ---
+# --- 2. Restrict permissions on sensitive directories ---
+chmod 700 /root
+chmod 700 /root/.gnupg 2>/dev/null || true
+chmod 700 /root/.password-store 2>/dev/null || true
+
+# --- 3. D-Bus session bus (required by bridge keychain) ---
 if [ -z "$DBUS_SESSION_BUS_ADDRESS" ]; then
     eval "$(dbus-launch --sh-syntax)"
     export DBUS_SESSION_BUS_ADDRESS
 fi
 
-# --- 3. Environment Variables ---
+# --- 4. Environment Variables ---
 SMTP_PORT="${CONTAINER_SMTP_PORT:-25}"
 IMAP_PORT="${CONTAINER_IMAP_PORT:-143}"
 WEBUI_PORT="${WEBUI_PORT:-3000}"
 
-# --- 4. Start socat proxies ---
+# --- 5. Start socat proxies ---
 # Bridge binds to 127.0.0.1 only. socat forwards from 0.0.0.0 (container interface)
 # so other containers/hosts on the network can reach the bridge.
 echo "[entrypoint] Starting socat proxies..."
 socat TCP-LISTEN:${SMTP_PORT},fork,reuseaddr TCP:127.0.0.1:1025 &
 socat TCP-LISTEN:${IMAP_PORT},fork,reuseaddr TCP:127.0.0.1:1143 &
 
-# --- 5. Start Web UI server ---
+# --- 6. Start Web UI server ---
 echo "[entrypoint] Starting Web UI on port ${WEBUI_PORT}..."
 /usr/bin/webui-server -port="${WEBUI_PORT}" &
 
-# --- 6. Start Bridge ---
+# --- 7. Start Bridge ---
 echo "[entrypoint] Starting Proton Mail Bridge..."
 /usr/bin/bridge --noninteractive &
 
