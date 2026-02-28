@@ -1,7 +1,7 @@
 ---
 type: task
 title: "SEC-LOW: No security response headers"
-status: open
+status: done
 priority: low
 labels: [security]
 created: 2026-02-27
