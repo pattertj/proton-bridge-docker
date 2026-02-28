@@ -544,7 +544,7 @@ func sanitizeAccountID(id string) (string, error) {
 }
 
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
-var controlRegex = regexp.MustCompile(`[\x00-\x09\x0b\x0c\x0e-\x1f]`)
+var controlRegex = regexp.MustCompile(`[\x00-\x09\x0b-\x1f]`)
 
 func stripANSI(s string) string {
 	s = ansiRegex.ReplaceAllString(s, "")
