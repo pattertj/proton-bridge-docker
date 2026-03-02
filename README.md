@@ -1,5 +1,13 @@
 # Proton Mail Bridge Docker
 
+[![Build and Push Docker Image](https://github.com/pattertj/proton-bridge-docker/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/pattertj/proton-bridge-docker/actions/workflows/build-and-push.yml)
+[![Create Release](https://github.com/pattertj/proton-bridge-docker/actions/workflows/release.yml/badge.svg)](https://github.com/pattertj/proton-bridge-docker/actions/workflows/release.yml)
+[![Check Upstream Bridge Version](https://github.com/pattertj/proton-bridge-docker/actions/workflows/check-upstream.yml/badge.svg)](https://github.com/pattertj/proton-bridge-docker/actions/workflows/check-upstream.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/pattertj/protonmail-bridge)](https://hub.docker.com/r/pattertj/protonmail-bridge)
+[![Docker Image Size](https://img.shields.io/docker/image-size/pattertj/protonmail-bridge/latest)](https://hub.docker.com/r/pattertj/protonmail-bridge)
+[![GHCR](https://img.shields.io/badge/ghcr.io-pattertj%2Fprotonmail--bridge-blue?logo=github)](https://ghcr.io/pattertj/protonmail-bridge)
+[![License: GPL-3.0](https://img.shields.io/github/license/pattertj/proton-bridge-docker)](LICENSE)
+
 Docker container for [Proton Mail Bridge](https://proton.me/mail/bridge) with a web-based setup UI, optimized for Unraid.
 
 Creates a local IMAP/SMTP server that decrypts your Proton Mail, allowing other containers and email clients on your network to send and receive email through your Proton account.
