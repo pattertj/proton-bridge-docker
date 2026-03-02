@@ -22,7 +22,7 @@ COPY webui/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /webui-server .
 
 # Stage 3: Runtime
-FROM debian:bookworm-slim
+FROM debian:stable-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pass \
@@ -31,7 +31,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     procps \
     libfido2-1 \
-    libcbor0.8 \
     libsecret-1-0 \
     dbus-x11 \
     && rm -rf /var/lib/apt/lists/*
