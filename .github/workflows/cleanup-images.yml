@@ -1,0 +1,86 @@
+name: Cleanup Old Docker Images
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC (same as upstream check)
+  workflow_dispatch:
+
+jobs:
+  clean-ghcr:
+    name: Clean GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old untagged GHCR versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: protonmail-bridge
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+
+  clean-dockerhub:
+    name: Clean Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune old SHA tags from Docker Hub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          REPO="pattertj/protonmail-bridge"
+          CUTOFF_DATE=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%S.000000Z 2>/dev/null \
+            || date -u -v-30d +%Y-%m-%dT%H:%M:%S.000000Z)
+
+          # Authenticate
+          TOKEN=$(curl -sf "https://hub.docker.com/v2/users/login/" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"${DOCKERHUB_USERNAME}\",\"password\":\"${DOCKERHUB_TOKEN}\"}" \
+            | jq -r .token)
+
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "::error::Failed to authenticate with Docker Hub"
+            exit 1
+          fi
+
+          # Paginate through all tags
+          PAGE=1
+          DELETED=0
+          while true; do
+            RESPONSE=$(curl -sf "https://hub.docker.com/v2/repositories/${REPO}/tags/?page=${PAGE}&page_size=100" \
+              -H "Authorization: Bearer ${TOKEN}")
+
+            TAGS=$(echo "$RESPONSE" | jq -c '.results[]')
+            if [ -z "$TAGS" ]; then
+              break
+            fi
+
+            echo "$TAGS" | while IFS= read -r tag; do
+              NAME=$(echo "$tag" | jq -r .name)
+              UPDATED=$(echo "$tag" | jq -r .last_updated)
+
+              # Only delete 40-char hex tags (commit SHAs)
+              if echo "$NAME" | grep -qE '^[0-9a-f]{40}$'; then
+                if [[ "$UPDATED" < "$CUTOFF_DATE" ]]; then
+                  echo "Deleting SHA tag: ${NAME} (last updated: ${UPDATED})"
+                  curl -sf -X DELETE \
+                    "https://hub.docker.com/v2/repositories/${REPO}/tags/${NAME}/" \
+                    -H "Authorization: Bearer ${TOKEN}" \
+                    && DELETED=$((DELETED + 1)) \
+                    || echo "::warning::Failed to delete tag ${NAME}"
+                fi
+              fi
+            done
+
+            # Check for next page
+            NEXT=$(echo "$RESPONSE" | jq -r .next)
+            if [ "$NEXT" = "null" ]; then
+              break
+            fi
+            PAGE=$((PAGE + 1))
+          done
+
+          echo "Cleanup complete. Deleted ${DELETED} old SHA tags."
