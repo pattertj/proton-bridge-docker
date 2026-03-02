@@ -436,13 +436,16 @@ function App() {
           if (syncing && view !== 'syncing') {
             setView('syncing');
           } else if (!syncing && view === 'syncing') {
+            // monitorSyncAndExit fetches credentials server-side;
+            // just fetch the cached accounts from state
+            await fetchAccounts();
             setView('dashboard');
           }
         }
       }, 5000);
       return () => clearInterval(pollRef.current);
     }
-  }, [view, fetchStatus]);
+  }, [view, fetchStatus, fetchAccounts]);
 
   // Login handler
   const handleLogin = async (username, password) => {
@@ -457,8 +460,13 @@ function App() {
       if (result.needs2fa) {
         setView('twofa');
       } else if (result.success) {
-        setView('dashboard');
-        fetchAccounts();
+        if (result.syncing) {
+          setView('syncing');
+          fetchStatus();
+        } else {
+          setView('dashboard');
+          fetchAccounts();
+        }
       } else if (result.error) {
         setError(result.error);
       } else {
@@ -483,8 +491,13 @@ function App() {
       });
 
       if (result.success) {
-        setView('dashboard');
-        fetchAccounts();
+        if (result.syncing) {
+          setView('syncing');
+          fetchStatus();
+        } else {
+          setView('dashboard');
+          fetchAccounts();
+        }
       } else if (result.error) {
         setError(result.error);
       } else {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 // API holds the HTTP handler dependencies
@@ -145,8 +146,12 @@ func (a *API) Login(w http.ResponseWriter, r *http.Request) {
 	if result.Success {
 		a.state.AddAccount(req.Username)
 		a.state.Save()
-		// Exit setup mode after successful login
-		go a.bridge.ExitSetupMode()
+		if result.Syncing {
+			// Keep CLI alive to capture sync progress, exit when done
+			go a.monitorSyncAndExit()
+		} else {
+			go a.bridge.ExitSetupMode()
+		}
 	}
 
 	writeJSON(w, http.StatusOK, result)
@@ -178,7 +183,11 @@ func (a *API) LoginTwoFactor(w http.ResponseWriter, r *http.Request) {
 
 	if result.Success {
 		a.state.Save()
-		go a.bridge.ExitSetupMode()
+		if result.Syncing {
+			go a.monitorSyncAndExit()
+		} else {
+			go a.bridge.ExitSetupMode()
+		}
 	}
 
 	writeJSON(w, http.StatusOK, result)
@@ -218,6 +227,67 @@ func (a *API) Logout(w http.ResponseWriter, r *http.Request) {
 
 	go a.bridge.ExitSetupMode()
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Account removed", "output": output})
+}
+
+// monitorSyncAndExit polls sync progress and exits setup mode when sync completes.
+// This keeps the CLI alive so readLoop can capture sync progress lines.
+func (a *API) monitorSyncAndExit() {
+	const (
+		pollInterval = 3 * time.Second
+		maxWait      = 30 * time.Minute
+	)
+	deadline := time.Now().Add(maxWait)
+	log.Println("[api] Monitoring sync progress, will exit setup mode when complete")
+
+	for time.Now().Before(deadline) {
+		time.Sleep(pollInterval)
+
+		progress := a.bridge.GetSyncProgress()
+		allDone := true
+		for _, p := range progress {
+			if p.Syncing {
+				allDone = false
+				break
+			}
+		}
+
+		// If we have progress entries and all are done, sync is complete
+		if len(progress) > 0 && allDone {
+			log.Println("[api] Sync complete, fetching account credentials before exit")
+
+			// Wait briefly for account to unlock after sync finishes
+			time.Sleep(3 * time.Second)
+
+			// Fetch credentials while still in setup mode
+			accounts, err := a.bridge.GetAccounts()
+			if err == nil && len(accounts) > 0 {
+				details := make([]AccountInfo, 0, len(accounts))
+				for _, acc := range accounts {
+					if acc.Email != "" {
+						a.state.AddAccount(acc.Email)
+						details = append(details, AccountInfo{
+							Email:    acc.Email,
+							Username: acc.Username,
+							Password: acc.Password,
+							IMAPPort: acc.IMAPPort,
+							SMTPPort: acc.SMTPPort,
+							Security: acc.Security,
+							Mode:     acc.Mode,
+							Status:   acc.Status,
+						})
+					}
+				}
+				a.state.SetAccountDetails(details)
+				a.state.Save()
+			} else if err != nil {
+				log.Printf("[api] Failed to fetch accounts after sync: %v", err)
+			}
+			break
+		}
+	}
+
+	log.Println("[api] Exiting setup mode after sync monitoring")
+	a.bridge.ExitSetupMode()
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
