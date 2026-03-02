@@ -1,5 +1,5 @@
 # Stage 1: Build Proton Bridge from source
-FROM golang:1.24-bookworm AS bridge-builder
+FROM dhi.io/golang:1.24-debian12-dev AS bridge-builder
 
 ARG BRIDGE_VERSION=v3.22.0
 
@@ -15,14 +15,16 @@ RUN git clone --depth 1 --branch ${BRIDGE_VERSION} \
 RUN make build-nogui
 
 # Stage 2: Build Web UI
-FROM golang:1.24-bookworm AS webui-builder
+FROM dhi.io/golang:1.24-debian12-dev AS webui-builder
 
 WORKDIR /webui
 COPY webui/ .
 RUN CGO_ENABLED=0 GOOS=linux go build -o /webui-server .
 
 # Stage 3: Runtime
-FROM debian:bookworm-slim
+FROM dhi.io/debian-base:bookworm
+
+USER 0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pass \
