@@ -1,7 +1,7 @@
 # Stage 1: Build Proton Bridge from source
 FROM golang:1.24-bookworm AS bridge-builder
 
-ARG BRIDGE_VERSION=v3.22.0
+ARG BRIDGE_VERSION=v3.25.0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git gcc libc6-dev libsecret-1-dev pkg-config libfido2-dev libcbor-dev && \
